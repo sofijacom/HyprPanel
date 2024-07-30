@@ -604,6 +604,7 @@ const options = mkOptions(OPTIONS, {
         workspaces: {
             show_icons: opt(false),
             show_numbered: opt(false),
+            show_occupied: opt(true),
             numbered_active_indicator: opt<"underline" | "highlight">("underline"),
             icons: {
                 available: opt(""),

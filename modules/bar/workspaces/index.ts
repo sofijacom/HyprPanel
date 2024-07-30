@@ -1,134 +1,46 @@
 const hyprland = await Service.import("hyprland");
-import { WorkspaceRule, WorkspaceMap } from "lib/types/workspace";
 import options from "options";
+import { getCurrentMonitorWorkspaces, getWorkspaceRules, getWorkspacesForMonitor, createThrottledScrollHandlers, getOccupiedWorkspaces } from "./helpers";
 
-const { workspaces, monitorSpecific, reverse_scroll, scroll_speed, spacing } = options.bar.workspaces;
+const { workspaces, show_occupied, monitorSpecific, scroll_speed, spacing } = options.bar.workspaces;
 
 function range(length: number, start = 1) {
     return Array.from({ length }, (_, i) => i + start);
 }
 
+hyprland.connect("changed", () => {
+    // console.log(JSON.stringify(hyprland.monitors, null, 2));
+
+})
 const Workspaces = (monitor = -1, ws = 8) => {
-    const getWorkspacesForMonitor = (curWs: number, wsRules: WorkspaceMap) => {
-        if (!wsRules || !Object.keys(wsRules).length) {
+
+    const currentMonitorWorkspaces = Variable(getCurrentMonitorWorkspaces(monitor));
+
+    const filterWorkspaces = (index: number, monitorSpecific: boolean, occupiedWSs: boolean) => {
+        const currentOccupied = getOccupiedWorkspaces(monitor, monitorSpecific);
+        log(`monitor: ${monitor} => ${currentOccupied}`)
+        if (!monitorSpecific) {
+            if (occupiedWSs) {
+                return currentOccupied.includes(index);
+            }
             return true;
         }
+        const workspaceRules = getWorkspaceRules();
+        if (occupiedWSs) {
 
-        const monitorMap = {};
-        hyprland.monitors.forEach((m) => (monitorMap[m.id] = m.name));
-
-        const currentMonitorName = monitorMap[monitor];
-        return wsRules[currentMonitorName].includes(curWs);
-    };
-
-    const getWorkspaceRules = (): WorkspaceMap => {
-        try {
-            const rules = Utils.exec("hyprctl workspacerules -j");
-
-            const workspaceRules = {};
-
-            JSON.parse(rules).forEach((rule: WorkspaceRule, index: number) => {
-                if (Object.hasOwnProperty.call(workspaceRules, rule.monitor)) {
-                    workspaceRules[rule.monitor].push(index + 1);
-                } else {
-                    workspaceRules[rule.monitor] = [index + 1];
-                }
-            });
-
-            return workspaceRules;
-        } catch (err) {
-            console.error(err);
-            return {};
+            return currentOccupied.includes(index) && getWorkspacesForMonitor(index, workspaceRules, monitor);
         }
-    };
-
-    const getCurrentMonitorWorkspaces = () => {
-        if (hyprland.monitors.length === 1) {
-            return Array.from({ length: workspaces.value }, (_, i) => i + 1);
-        }
-
-        const monitorWorkspaces = getWorkspaceRules();
-        const monitorMap = {};
-        hyprland.monitors.forEach((m) => (monitorMap[m.id] = m.name));
-
-        const currentMonitorName = monitorMap[monitor];
-
-        return monitorWorkspaces[currentMonitorName];
+        return getWorkspacesForMonitor(index, workspaceRules, monitor);
     }
-    const currentMonitorWorkspaces = Variable(getCurrentMonitorWorkspaces());
-
-    workspaces.connect("changed", () => {
-        currentMonitorWorkspaces.value = getCurrentMonitorWorkspaces()
-    })
-
-    const goToNextWS = () => {
-        const curWorkspace = hyprland.active.workspace.id;
-        const indexOfWs = currentMonitorWorkspaces.value.indexOf(curWorkspace);
-        let nextIndex = indexOfWs + 1;
-        if (nextIndex >= currentMonitorWorkspaces.value.length) {
-            nextIndex = 0;
-        }
-
-        hyprland.messageAsync(`dispatch workspace ${currentMonitorWorkspaces.value[nextIndex]}`)
-    }
-
-    const goToPrevWS = () => {
-        const curWorkspace = hyprland.active.workspace.id;
-        const indexOfWs = currentMonitorWorkspaces.value.indexOf(curWorkspace);
-        let prevIndex = indexOfWs - 1;
-        if (prevIndex < 0) {
-            prevIndex = currentMonitorWorkspaces.value.length - 1;
-        }
-
-        hyprland.messageAsync(`dispatch workspace ${currentMonitorWorkspaces.value[prevIndex]}`)
-    }
-
-    function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
-        let inThrottle: boolean;
-        return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => {
-                    inThrottle = false;
-                }, limit);
-            }
-        } as T;
-    }
-
-    const createThrottledScrollHandlers = (scrollSpeed: number) => {
-        const throttledScrollUp = throttle(() => {
-            if (reverse_scroll.value === true) {
-                goToPrevWS();
-            } else {
-                goToNextWS();
-            }
-        }, 200 / scrollSpeed);
-
-        const throttledScrollDown = throttle(() => {
-            if (reverse_scroll.value === true) {
-                goToNextWS();
-            } else {
-                goToPrevWS();
-            }
-        }, 200 / scrollSpeed);
-
-        return { throttledScrollUp, throttledScrollDown };
-    }
-
     return {
         component: Widget.Box({
             class_name: "workspaces",
             children: Utils.merge(
-                [workspaces.bind(), monitorSpecific.bind()],
-                (workspaces, monitorSpecific) => {
-                    return range(workspaces || 8)
+                [workspaces.bind(), monitorSpecific.bind(), show_occupied.bind()],
+                (wrkSpcs, monitorSpecific, occupiedWSs) => {
+                    return range(wrkSpcs || 8)
                         .filter((i) => {
-                            if (!monitorSpecific) {
-                                return true;
-                            }
-                            const workspaceRules = getWorkspaceRules();
-                            return getWorkspacesForMonitor(i, workspaceRules);
+                            return filterWorkspaces(i, monitorSpecific, occupiedWSs);
                         })
                         .map((i) => {
                             return Widget.Button({
@@ -224,7 +136,7 @@ const Workspaces = (monitor = -1, ws = 8) => {
         props: {
             setup: (self: any) => {
                 self.hook(scroll_speed, () => {
-                    const { throttledScrollUp, throttledScrollDown } = createThrottledScrollHandlers(scroll_speed.value);
+                    const { throttledScrollUp, throttledScrollDown } = createThrottledScrollHandlers(scroll_speed.value, currentMonitorWorkspaces);
                     self.on_scroll_up = throttledScrollUp;
                     self.on_scroll_down = throttledScrollDown;
                 });
