@@ -18,18 +18,17 @@ const Workspaces = (monitor = -1, ws = 8) => {
 
     const filterWorkspaces = (index: number, monitorSpecific: boolean, occupiedWSs: boolean) => {
         const currentOccupied = getOccupiedWorkspaces(monitor, monitorSpecific);
-        log(`monitor: ${monitor} => ${currentOccupied}`)
+
         if (!monitorSpecific) {
-            if (occupiedWSs) {
-                return currentOccupied.includes(index);
-            }
+            // if (occupiedWSs) {
+            //     return currentOccupied.includes(index);
+            // }
             return true;
         }
         const workspaceRules = getWorkspaceRules();
-        if (occupiedWSs) {
-
-            return currentOccupied.includes(index) && getWorkspacesForMonitor(index, workspaceRules, monitor);
-        }
+        // if (occupiedWSs) {
+        //     return currentOccupied.includes(index) && getWorkspacesForMonitor(index, workspaceRules, monitor);
+        // }
         return getWorkspacesForMonitor(index, workspaceRules, monitor);
     }
     return {
