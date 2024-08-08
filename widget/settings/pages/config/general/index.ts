@@ -13,6 +13,7 @@ export const BarGeneral = () => {
             Option({ opt: options.theme.font.size, title: 'Font Size', type: 'string' }),
             Option({ opt: options.theme.font.weight, title: 'Font Weight', subtitle: "100, 200, 300, etc.", type: 'number', increment: 100, min: 100, max: 900 }),
             Option({ opt: options.terminal, title: 'Terminal', subtitle: "Tools such as 'btop' will open in this terminal", type: 'string' }),
+            Option({ opt: options.bar.escape_to_close, title: '\'Escape\' To Close Menus', subtitle: 'Allows the \'Escape\' key to close dropdown menus.', type: 'boolean' }),
 
             Header('On Screen Display'),
             Option({ opt: options.theme.osd.enable, title: 'Enabled', type: 'boolean' }),

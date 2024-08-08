@@ -1,6 +1,9 @@
 const hyprland = await Service.import("hyprland");
 import { globalMousePos } from "globals";
 import { Exclusivity } from "lib/types/widget";
+import options from "options";
+
+const { escape_to_close } = options.bar;
 
 export const Padding = (name: string) =>
     Widget.EventBox({
@@ -91,9 +94,9 @@ export default ({
         class_names: [name, "dropdown-menu"],
         setup: (w) => w.keybind("Escape", () => App.closeWindow(name)),
         visible: initRender.bind("value"),
-        keymode: "on-demand",
+        keymode: escape_to_close.bind("value").as(v => v ? "on-demand" : "none"),
         exclusivity,
-        layer: "top",
+        layer: "overlay",
         anchor: ["top", "left"],
         child: Widget.EventBox({
             class_name: "parent-event",
