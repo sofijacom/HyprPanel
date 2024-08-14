@@ -158,7 +158,7 @@ const Workspaces = (monitor = -1, ws = 8) => {
                             const workspaceRules = getWorkspaceRules();
                             return getWorkspacesForMonitor(i, workspaceRules);
                         })
-                        .map((i) => {
+                        .map((i, index) => {
                             return Widget.Button({
                                 class_name: "workspace-button",
                                 on_primary_click: () => {
@@ -215,7 +215,7 @@ const Workspaces = (monitor = -1, ws = 8) => {
                                                     return available;
                                                 }
                                             }
-                                            return `${i}`;
+                                            return `${index + 1}`;
                                         },
                                     ),
                                     setup: (self) => {
