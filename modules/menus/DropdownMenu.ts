@@ -29,6 +29,7 @@ const moveBoxToCursor = (self: any, fixed: boolean) => {
             const foundMonitor = parsedMonitorInfo.find((monitor: Monitor) =>
                 monitor.id === hyprland.active.monitor.id
             );
+
             hyprScaling = foundMonitor?.scale || 1;
         } catch (error) {
             console.error(`Error parsing hyprland monitors: ${error}`);
@@ -49,20 +50,25 @@ const moveBoxToCursor = (self: any, fixed: boolean) => {
         const gdkScale = Utils.exec('bash -c "echo $GDK_SCALE"');
         const gdkDpiScale = Utils.exec('bash -c "echo $GDK_DPI_SCALE"');
 
-        monWidth = monWidth / hyprScaling;
-        monHeight = monHeight / hyprScaling;
+        const hasGdkScale = /^\d+(.\d+)?$/.test(gdkScale);
+        const hasGdkDPIScale = /^\d+(.\d+)?$/.test(gdkDpiScale);
 
-        if (/^\d+(.\d+)?$/.test(gdkScale)) {
+        if (hasGdkScale) {
             const scale = parseFloat(gdkScale);
             monWidth = monWidth / scale;
             monHeight = monHeight / scale;
 
         }
-        if (/^\d+(.\d+)?$/.test(gdkDpiScale)) {
+        if (hasGdkDPIScale) {
             const scale = parseFloat(gdkDpiScale);
             monWidth = monWidth / scale;
             monHeight = monHeight / scale;
 
+        }
+
+        if (hyprScaling !== 1) {
+            monWidth = monWidth / hyprScaling;
+            monHeight = monHeight / hyprScaling;
         }
 
         // If monitor is vertical (transform = 1 || 3) swap height and width
