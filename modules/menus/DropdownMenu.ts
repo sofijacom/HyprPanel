@@ -45,15 +45,24 @@ const moveBoxToCursor = (self: any, fixed: boolean) => {
         // to get the proper coordinates.
         // Ex: On a 2860px wide monitor... if scaling is set to 2, then the right
         // end of the monitor is the 1430th pixel.
+        //GDK_DPI_SCALE
         const gdkScale = Utils.exec('bash -c "echo $GDK_SCALE"');
+        const gdkDpiScale = Utils.exec('bash -c "echo $GDK_DPI_SCALE"');
+
+        monWidth = monWidth / hyprScaling;
+        monHeight = monHeight / hyprScaling;
 
         if (/^\d+(.\d+)?$/.test(gdkScale)) {
             const scale = parseFloat(gdkScale);
             monWidth = monWidth / scale;
             monHeight = monHeight / scale;
-        } else {
-            monWidth = monWidth / hyprScaling;
-            monHeight = monHeight / hyprScaling;
+
+        }
+        if (/^\d+(.\d+)?$/.test(gdkDpiScale)) {
+            const scale = parseFloat(gdkDpiScale);
+            monWidth = monWidth / scale;
+            monHeight = monHeight / scale;
+
         }
 
         // If monitor is vertical (transform = 1 || 3) swap height and width
